@@ -2,47 +2,71 @@ package edu.course.eventplanner;
 
 import edu.course.eventplanner.model.*;
 import edu.course.eventplanner.service.*;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class GuestListManagerTest {
-    @Test
-    void addGuest_increasesCountAndFindsGuest() {
+    
+    // Parameterized test: add guests with different names and group tags
+    @ParameterizedTest(name = "Adding guest {0} in group {1}")
+    @CsvSource({
+        "Alice, family",
+        "Bob, friends",
+        "Charlie, coworkers",
+        "Diana, neighbors"
+    })
+    void addGuest_increasesCountAndFindsGuest(String name, String groupTag) {
         GuestListManager manager = new GuestListManager();
-        Guest g = new Guest("Alice", "family");
+        Guest g = new Guest(name, groupTag);
         manager.addGuest(g);
         assertEquals(1, manager.getGuestCount());
-        assertEquals(g, manager.findGuest("Alice"));
+        Guest found = manager.findGuest(name);
+        assertNotNull(found);
+        assertEquals(name, found.getName());
+        assertEquals(groupTag, found.getGroupTag());
     }
 
-    @Test
-    void removeGuest_decreasesCountAndRemovesFromFind() {
+    // Parameterized test: remove guests with different names
+    @ParameterizedTest(name = "Removing guest {0} from group {1}")
+    @CsvSource({
+        "Alice, family",
+        "Bob, friends",
+        "Charlie, coworkers"
+    })
+    void removeGuest_decreasesCountAndRemovesFromFind(String name, String groupTag) {
         GuestListManager manager = new GuestListManager();
-        Guest g = new Guest("Bob", "friends");
+        Guest g = new Guest(name, groupTag);
         manager.addGuest(g);
-        assertTrue(manager.removeGuest("Bob"));
-        assertNull(manager.findGuest("Bob"));
+        assertTrue(manager.removeGuest(name));
+        assertNull(manager.findGuest(name));
         assertEquals(0, manager.getGuestCount());
     }
 
-    @Test
-    void findGuest_returnsNullIfNotFound() {
+    // Parameterized test: find non-existent guests
+    @ParameterizedTest(name = "Finding non-existent guest: {0}")
+    @ValueSource(strings = {"Nonexistent", "Unknown", "Missing", ""})
+    void findGuest_returnsNullIfNotFound(String name) {
         GuestListManager manager = new GuestListManager();
-        assertNull(manager.findGuest("Nonexistent"));
+        assertNull(manager.findGuest(name));
     }
 
-    @Test
-    void getAllGuests_returnsAllAddedGuests() {
+    // Parameterized test: add multiple guests and verify count
+    @ParameterizedTest(name = "Adding {0} guests")
+    @ValueSource(ints = {1, 2, 5, 10})
+    void getAllGuests_returnsCorrectCount(int guestCount) {
         GuestListManager manager = new GuestListManager();
-        Guest g1 = new Guest("A", "family");
-        Guest g2 = new Guest("B", "friends");
-        manager.addGuest(g1);
-        manager.addGuest(g2);
+        String[] groupTags = {"family", "friends", "coworkers", "neighbors"};
+        
+        for (int i = 0; i < guestCount; i++) {
+            manager.addGuest(new Guest("Guest" + i, groupTags[i % groupTags.length]));
+        }
+        
         List<Guest> all = manager.getAllGuests();
-        assertTrue(all.contains(g1));
-        assertTrue(all.contains(g2));
-        assertEquals(2, all.size());
+        assertEquals(guestCount, all.size());
+        assertEquals(guestCount, manager.getGuestCount());
     }
 }

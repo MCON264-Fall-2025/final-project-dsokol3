@@ -7,7 +7,7 @@ public class GuestListManager {
     private final LinkedList<Guest> guests = new LinkedList<>();
     private final Map<String, Guest> guestByName = new HashMap<>();
 
-    public void addGuest(Guest guest) { /* TODO */
+    public void addGuest(Guest guest) {
         guests.add(guest);
         guestByName.put(guest.getName(), guest);
     }
