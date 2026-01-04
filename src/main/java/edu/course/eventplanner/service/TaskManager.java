@@ -11,6 +11,10 @@ public class TaskManager {
         upcoming.add(task);
     }
 
+    /**
+     * Execute the next task
+     * @return the task that was executed, or null if there are no upcoming tasks
+     */
     public Task executeNextTask() {
         Task task = upcoming.poll();
         if (task != null) {
@@ -19,6 +23,10 @@ public class TaskManager {
         return task;
     }
 
+    /***
+     * Undo the last task that was executed
+     * @return the task that was undone, or null if there are no completed tasks
+     */
     public Task undoLastTask() {
         if (!completed.isEmpty()) {
             Task task = completed.pop();
@@ -28,6 +36,10 @@ public class TaskManager {
         return null;
     }
 
+    /**
+     * Get the number of tasks that have not yet been executed
+     * @return the number of remaining tasks
+     */
     public int remainingTaskCount() {
         return upcoming.size();
     }

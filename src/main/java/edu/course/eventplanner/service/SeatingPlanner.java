@@ -22,7 +22,7 @@ public class SeatingPlanner {
      */
     public Map<Integer, List<Guest>> generateSeating(List<Guest> guests) {
         Map<Integer, List<Guest>> seating = new LinkedHashMap<>();
-        if (guests == null || guests.size() == 0) {
+        if (guests == null || guests.isEmpty()) {
             return seating;
         }
 
@@ -32,21 +32,54 @@ public class SeatingPlanner {
         if (tableCount <= 0 || seatsPerTable <= 0) {
             return seating;
         }
-        // Calculate total capacity
-        int totalCapacityInVenue = tableCount * seatsPerTable;
 
+        int totalCapacityInVenue = tableCount * seatsPerTable;
         if (guests.size() > totalCapacityInVenue) {
-            throw new IllegalStateException(String.format("Not enough seats for all guests"));
+            throw new IllegalStateException("Not enough seats for all guests");
         }
 
-        int guestIndex = 0;
+        // Group guests by groupTag using a queue for fair seating
+        Map<String, Queue<Guest>> groups = new HashMap<>();
+        for (Guest g : guests) {
+            groups.computeIfAbsent(g.getGroupTag(), k -> new LinkedList<>()).add(g);
+        }
 
+        // TreeSet ordering groups by remaining size (desc), then by tag for tie-breaker
+        class GroupEntry {
+            final String tag;
+            int size;
+            GroupEntry(String tag, int size) { this.tag = tag; this.size = size; }
+        }
+
+        Comparator<GroupEntry> cmp = Comparator
+                .comparingInt((GroupEntry e) -> -e.size)
+                .thenComparing(e -> e.tag);
+
+        TreeSet<GroupEntry> orderedGroups = new TreeSet<>(cmp);
+        for (Map.Entry<String, Queue<Guest>> e : groups.entrySet()) {
+            orderedGroups.add(new GroupEntry(e.getKey(), e.getValue().size()));
+        }
+
+        // Fill tables one at a time
         for (int table = 1; table <= tableCount; table++) {
             List<Guest> tableList = new ArrayList<>(seatsPerTable);
+            int seatsLeft = seatsPerTable;
 
-            for (int seat = 0; seat < seatsPerTable && guestIndex < guests.size(); seat++) {
-                tableList.add(guests.get(guestIndex));
-                guestIndex++;
+            while (seatsLeft > 0 && !orderedGroups.isEmpty()) {
+                GroupEntry ge = orderedGroups.pollFirst();
+                Queue<Guest> q = groups.get(ge.tag);
+                int seatCount = Math.min(seatsLeft, q.size());
+
+                for (int i = 0; i < seatCount; i++) {
+                    tableList.add(q.poll());
+                }
+
+                seatsLeft -= seatCount;
+
+                if (!q.isEmpty()) {
+                    // update remaining size and reinsert
+                    orderedGroups.add(new GroupEntry(ge.tag, q.size()));
+                }
             }
 
             seating.put(table, tableList);
