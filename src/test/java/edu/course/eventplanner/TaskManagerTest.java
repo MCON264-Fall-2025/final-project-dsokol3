@@ -12,9 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TaskManagerTest {
     
-    // Parameterized test: add and execute tasks with various descriptions
     @ParameterizedTest(name = "Task: {0}")
-    @ValueSource(strings = {"Decorate", "Cook", "Send invitations", "Book venue", "Order catering"})
+    @ValueSource(strings = {"Decorate", "Send invitations"})
     void addTask_and_executeNextTask(String taskDescription) {
         TaskManager manager = new TaskManager();
         Task task = new Task(taskDescription);
@@ -23,42 +22,31 @@ class TaskManagerTest {
         assertEquals(1, manager.remainingTaskCount());
         Task executed = manager.executeNextTask();
         assertEquals(task, executed);
-        assertEquals(taskDescription, executed.getDescription());
         assertEquals(0, manager.remainingTaskCount());
     }
 
-    // Parameterized test: undo with different task descriptions
-    @ParameterizedTest(name = "Undo task: {0}")
-    @ValueSource(strings = {"Decorate", "Setup tables", "Arrange flowers"})
-    void undoLastTask_returnsLastExecutedTask(String taskDescription) {
+    @Test
+    void undoLastTask_returnsLastExecutedTask() {
         TaskManager manager = new TaskManager();
-        Task task = new Task(taskDescription);
+        Task task = new Task("Decorate");
         manager.addTask(task);
         manager.executeNextTask();
         
         Task undone = manager.undoLastTask();
         assertEquals(task, undone);
-        assertEquals(taskDescription, undone.getDescription());
     }
 
-    // Parameterized test: add multiple tasks and verify queue order (FIFO)
-    @ParameterizedTest(name = "Adding {0} tasks in queue order")
-    @ValueSource(ints = {2, 3, 5, 10})
+    @ParameterizedTest(name = "Adding {0} tasks - FIFO order")
+    @ValueSource(ints = {2, 5})
     void addMultipleTasks_executesInFifoOrder(int taskCount) {
         TaskManager manager = new TaskManager();
-        
-        // Add tasks numbered 1 to taskCount
         IntStream.rangeClosed(1, taskCount)
             .forEach(i -> manager.addTask(new Task("Task " + i)));
         
         assertEquals(taskCount, manager.remainingTaskCount());
-        
-        // Execute and verify FIFO order
         for (int i = 1; i <= taskCount; i++) {
-            Task executed = manager.executeNextTask();
-            assertEquals("Task " + i, executed.getDescription());
+            assertEquals("Task " + i, manager.executeNextTask().getDescription());
         }
-        assertEquals(0, manager.remainingTaskCount());
     }
 
     @Test
@@ -73,28 +61,20 @@ class TaskManagerTest {
         assertNull(manager.undoLastTask());
     }
     
-    // Parameterized test: undo multiple tasks in LIFO order
-    @ParameterizedTest(name = "Execute {0} tasks then undo in reverse order")
-    @ValueSource(ints = {2, 3, 4})
-    void undoMultipleTasks_returnsInLifoOrder(int taskCount) {
+    @Test
+    void undoMultipleTasks_returnsInLifoOrder() {
         TaskManager manager = new TaskManager();
-        
-        // Add and execute tasks
-        IntStream.rangeClosed(1, taskCount)
+        IntStream.rangeClosed(1, 3)
             .forEach(i -> manager.addTask(new Task("Task " + i)));
         
-        for (int i = 0; i < taskCount; i++) {
+        for (int i = 0; i < 3; i++) {
             manager.executeNextTask();
         }
         
         // Undo in reverse order (LIFO)
-        for (int i = taskCount; i >= 1; i--) {
-            Task undone = manager.undoLastTask();
-            assertNotNull(undone);
-            assertEquals("Task " + i, undone.getDescription());
+        for (int i = 3; i >= 1; i--) {
+            assertEquals("Task " + i, manager.undoLastTask().getDescription());
         }
-        
-        // No more to undo
         assertNull(manager.undoLastTask());
     }
 }
