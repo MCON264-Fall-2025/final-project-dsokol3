@@ -1,0 +1,11 @@
+.classpath
+.project
+.settings/
+bin/
+target/
+
+# Ignore local Hugging Face extension files and node packages
+huggingface-vscode-chat/
+node_modules/
+package-lock.json
+package.json
